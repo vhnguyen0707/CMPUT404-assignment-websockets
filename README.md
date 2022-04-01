@@ -59,3 +59,16 @@ Contributors
 * Mark Galloway
 * Abram Hindle
 * Cole Mackenzie
+* Nguyen Vu
+
+Reference
+===========
+* https://github.com/abramhindle/WebSocketsExamples/blob/master/broadcaster.py (Professor's in-class WebSockets Example)
+* https://stackoverflow.com/a/51628190 (Randomize RGB color)
+* https://github.com/vhnguyen0707/CMPUT404-assignment-ajax (My own assignment 4)
+
+
+
+Collaboration
+===========
+None

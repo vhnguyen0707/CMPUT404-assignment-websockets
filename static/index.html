@@ -44,6 +44,15 @@ debug("Test");
 
 world = {};
 
+function randomizeColor(){
+    // https://stackoverflow.com/a/51628190
+    var num = Math.round(0xffffff * Math.random());
+    var r = num >> 16;
+	var g = num >> 8 & 255;
+	var b = num & 255;
+    return ["rgb(",r,",",g,",",b,")"].join("");
+}
+
 //XXX: TODO Make this prettier!
 function drawCircle(context,entity) {
     with(context) {
@@ -53,9 +62,13 @@ function drawCircle(context,entity) {
         var y = entity["y"];
         //moveTo(x,y);
         fillStyle = entity["colour"];
-        strokeStyle = fillStyle;
+        
+        var my_gradient = context.createLinearGradient(0,0,0,0);
+        my_gradient.addColorStop(0, entity["colour"])
+        my_gradient.addColorStop(1, entity["colour"])
+        strokeStyle = my_gradient;
         arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
-        stroke();                                
+        fill();                                
     }
 }
 
@@ -125,6 +138,11 @@ function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
     //XXX: Send a XHTML Request that updates the entity you just modified!
+    packet = {};
+    packet[entity] = data;
+    socket.send(JSON.stringify(packet));
+
+
 }
 var counter = 0;
 function addEntityWithoutName(data) {
@@ -231,15 +249,15 @@ mouse = (function() {
 // Add the application specific mouse listeners!
 //XXX: TODO Make these prettier!
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y,'colour':randomizeColor()});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y,'colour':randomizeColor()});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
+    addEntityWithoutName({'x':x,'y':y,'colour':'white',
                           'radius':10});
 });
 
@@ -254,6 +272,12 @@ function wsSetup() {
     socket = new WebSocket(url);
     socket.onopen = function() {
         //XXX: TODO What are you going to do here?
+        fetch('/world').then((res) => {
+            res.json().then((data) => {
+                world = data;
+                drawNextFrame();
+            });
+        })
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
@@ -261,7 +285,12 @@ function wsSetup() {
     socket.onmessage = function(msg) {  
         try {
             debug("WebSocket Recv:" + msg.data);
-            //XXX: TODO What are you going to do here?            
+            data = JSON.parse(msg.data)
+            for (let entity in data){
+                world[entity] = data[entity];
+                drawNextFrame();  
+            }
+                
         } catch (e) {
             alert("socket on message: " + e);
         }
