@@ -272,12 +272,7 @@ function wsSetup() {
     socket = new WebSocket(url);
     socket.onopen = function() {
         //XXX: TODO What are you going to do here?
-        fetch('/world').then((res) => {
-            res.json().then((data) => {
-                world = data;
-                drawNextFrame();
-            });
-        })
+        socket.send(JSON.stringify(world))
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
@@ -288,8 +283,9 @@ function wsSetup() {
             data = JSON.parse(msg.data)
             for (let entity in data){
                 world[entity] = data[entity];
-                drawNextFrame();  
+                 
             }
+            drawNextFrame(); 
                 
         } catch (e) {
             alert("socket on message: " + e);

@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 import flask
-from flask import Flask, request, redirect, Response
+from flask import Flask, request, redirect, jsonify
 from flask_sockets import Sockets
 import gevent
 from gevent import queue
@@ -63,6 +63,12 @@ class World:
 myWorld = World()    
 clients = list()    
 
+def send_all(msg):
+    for client in clients:
+        client.put(msg)
+
+def send_all_json(obj):
+    send_all( json.dumps(obj) )
 
 class Client:
     def __init__(self):
@@ -75,9 +81,8 @@ class Client:
         return self.queue.get()
 
 def set_listener( entity, data ):
-    msg = json.dump({entity: data})
-    for client in clients:
-        client.put(msg)
+    obj = {entity:data}
+    send_all_json(obj)
 
 myWorld.add_set_listener( set_listener )
         
@@ -95,8 +100,9 @@ def read_ws(ws,client):
             print("WS RECV: %s" % msg)
             if (msg is not None):
                 packet = json.loads(msg)
-                for entity, data in packet.items:
-                    myWorld.set(entity, data)
+                # send_all_json(packet)
+                for entity in packet:
+                    myWorld.set(entity, packet[entity])
             else:
                 break
     except:
@@ -112,8 +118,7 @@ def subscribe_socket(ws):
     try:
         while True:
             msg = client.get()
-            if (msg is not None):
-                ws.send(msg)
+            ws.send(msg)
     except Exception as e:
         print("WS Error %s" % e)
     finally:
@@ -138,23 +143,23 @@ def update(entity):
     '''update the entities via this interface'''
     data = flask_post_json()
     myWorld.set(entity, data)
-    return Response(json.dumps(data), status=200)
+    return jsonify(data), 200
 
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
     world = myWorld.world()
-    return Response(json.dumps(world), status=200)
+    return jsonify(world), 200
 
 @app.route("/entity/<entity>")    
 def get_entity(entity):
-    return Response(json.dumps(myWorld.get(entity)), status=200)
+    return jsonify(myWorld.get(entity)), 200
 
 
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     myWorld.clear()
-    return Response(json.dumps(myWorld.world()), status=200)
+    return jsonify(myWorld.world()), 200
 
 
 if __name__ == "__main__":
